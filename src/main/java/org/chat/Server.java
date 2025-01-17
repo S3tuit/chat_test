@@ -55,13 +55,13 @@ public class Server {
             }
         }
 
-        public void tellEveryone(String message){
+        public void tellEveryone(ChatMessage chatMessage){
 
             Iterator<ObjectOutputStream> iterator = clientOutputStreams.iterator();
             while(iterator.hasNext()){
                 try{
                     ObjectOutputStream objectOutput = iterator.next();
-                    objectOutput.writeObject(message);
+                    objectOutput.writeObject(chatMessage);
                     objectOutput.flush();
 
                 } catch(SocketException ex){
@@ -76,12 +76,12 @@ public class Server {
 
         @Override
         public void run() {
-            String message;
+            ChatMessage chatMessage;
 
             try{
-                while((message = (String) objectInput.readObject()) != null){
-                    System.out.println("Server reads: " + message);
-                    this.tellEveryone(message);
+                while((chatMessage = (ChatMessage) objectInput.readObject()) != null){
+                    System.out.println("Server reads: " + chatMessage.getMessage());
+                    this.tellEveryone(chatMessage);
 
                 }
             } catch (SocketException se) {

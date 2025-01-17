@@ -29,7 +29,16 @@ public class ChatApp {
         @Override
         public void actionPerformed(ActionEvent e) {
             String message = chatGui.getMessageAndClean();
-            communicator.sendMessage(message);
+            ChatMessage chatMessage;
+
+            if(chatGui.isFileLoaded()){
+                byte[] fileData = FileHandler.readFileAsByte(chatGui.getFilePathAndClean());
+                chatMessage = new ChatMessage(message, fileData);
+            } else {
+                chatMessage = new ChatMessage(message);
+            }
+
+            communicator.sendMessage(chatMessage);
         }
     }
 }

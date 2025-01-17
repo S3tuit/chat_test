@@ -36,9 +36,9 @@ public class Communicator {
         }
     }
 
-    public void sendMessage(String message){
+    public void sendMessage(ChatMessage chatMessage){
         try{
-            outputStream.writeObject(message);
+            outputStream.writeObject(chatMessage);
             outputStream.flush();
 
         } catch (Exception ex) {
@@ -51,11 +51,11 @@ public class Communicator {
 
         @Override
         public void run() {
-            String message;
+            ChatMessage chatMessage;
             try{
-                while ((message = (String) inputStream.readObject()) != null){
-                    chatGui.appendMessage(message);
-                    System.out.println("Chat reads: " + message);
+                while ((chatMessage = (ChatMessage) inputStream.readObject()) != null){
+                    chatGui.appendMessage(chatMessage);
+                    System.out.println("Chat reads: " + chatMessage.getMessage());
                 }
             } catch (Exception e) {
                 System.out.println("Error reading the message in the chat");
