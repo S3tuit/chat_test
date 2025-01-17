@@ -1,5 +1,7 @@
 package org.chat;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -36,9 +38,9 @@ public class Communicator {
         }
     }
 
-    public void sendMessage(String message){
+    public void sendMessage(ChatMessage chatMessage){
         try{
-            outputStream.writeObject(message);
+            outputStream.writeObject(chatMessage);
             outputStream.flush();
 
         } catch (Exception ex) {
@@ -51,15 +53,41 @@ public class Communicator {
 
         @Override
         public void run() {
-            String message;
+            ChatMessage chatMessage;
+            SaveFileButtonListener saveFileAC;
+
             try{
-                while ((message = (String) inputStream.readObject()) != null){
-                    chatGui.appendMessage(message);
-                    System.out.println("Chat reads: " + message);
+                while ((chatMessage = (ChatMessage) inputStream.readObject()) != null){
+
+                    saveFileAC = new SaveFileButtonListener(chatMessage);
+                    chatGui.appendMessage(chatMessage, saveFileAC);
+                    System.out.println("Chat reads: " + chatMessage.getMessage());
                 }
             } catch (Exception e) {
                 System.out.println("Error reading the message in the chat");
                 e.printStackTrace();
+            }
+        }
+    }
+
+    // Action listener for the "Save File" button. Stores an instance of ChatMessage.
+    // When the user clicks it saves the byte[] stored in the ChatMessage at root/filename.
+    public class SaveFileButtonListener implements ActionListener {
+
+        ChatMessage chatMessage;
+
+        public SaveFileButtonListener(ChatMessage message) {
+            this.chatMessage = message;
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            if(chatMessage.isFileAttached()) {
+                String fileName = chatMessage.getFileName();
+                byte[] fileData = chatMessage.getFileAttached();
+                FileHandler.saveBytesToFile(fileName, fileData);
+            } else {
+                System.out.println("File not attached");
             }
         }
     }
