@@ -1,7 +1,5 @@
 package org.chat;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -53,41 +51,18 @@ public class Communicator {
 
         @Override
         public void run() {
-            ChatMessage chatMessage;
-            SaveFileButtonListener saveFileAC;
+            ServerMessage serverMessage;
 
             try{
-                while ((chatMessage = (ChatMessage) inputStream.readObject()) != null){
+                while ((serverMessage = (ServerMessage) inputStream.readObject()) != null){
 
-                    saveFileAC = new SaveFileButtonListener(chatMessage);
-                    chatGui.appendMessage(chatMessage, saveFileAC);
-                    System.out.println("Chat reads: " + chatMessage.getMessage());
+                    serverMessage.setChatGui(chatGui);
+                    serverMessage.process();
+
                 }
             } catch (Exception e) {
                 System.out.println("Error reading the message in the chat");
                 e.printStackTrace();
-            }
-        }
-    }
-
-    // Action listener for the "Save File" button. Stores an instance of ChatMessage.
-    // When the user clicks it saves the byte[] stored in the ChatMessage at root/filename.
-    public class SaveFileButtonListener implements ActionListener {
-
-        ChatMessage chatMessage;
-
-        public SaveFileButtonListener(ChatMessage message) {
-            this.chatMessage = message;
-        }
-
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            if(chatMessage.isFileAttached()) {
-                String fileName = chatMessage.getFileName();
-                byte[] fileData = chatMessage.getFileAttached();
-                FileHandler.saveBytesToFile(fileName, fileData);
-            } else {
-                System.out.println("File not attached");
             }
         }
     }

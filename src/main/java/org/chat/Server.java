@@ -7,19 +7,23 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.Collections;
+import java.util.List;
 
 public class Server {
 
-    private ArrayList<ObjectOutputStream> clientOutputStreams;
+    private List<ObjectOutputStream> clientOutputStreams;
 
     public static void main(String[] args) {
         Server server = new Server();
         server.start();
     }
 
+    public Server() {
+        this.clientOutputStreams = Collections.synchronizedList(new ArrayList<>());
+    }
+
     public void start(){
-        clientOutputStreams = new ArrayList<>();
         try{
             ServerSocket serverSocket = new ServerSocket(4242);
 
@@ -29,7 +33,7 @@ public class Server {
                 clientOutputStreams.add(objectOutput);
 
                 // Thread to read msg sent by clients
-                Thread thread = new Thread(new ClientHandler(clientSocket));
+                Thread thread = new Thread(new ClientHandler(clientSocket, objectOutput));
                 thread.start();
                 System.out.println("Client connected! \nClients connected: " + clientOutputStreams.size());
             }
@@ -40,55 +44,84 @@ public class Server {
         }
     }
 
-    // thread to handle the messages send by client
+    // thread to handle the messages sent by client
     public class ClientHandler implements Runnable {
-        ObjectInputStream objectInput;
-        Socket socket;
+        final ObjectInputStream objectInput;
+        final Socket socket;
+        final ObjectOutputStream objectOutput;
 
-        public ClientHandler(Socket socket){
+        public ClientHandler(Socket socket, ObjectOutputStream objectOutputStream){
+            // Used tmp for variable assignment to make objectInput final
+            ObjectInputStream tmpObjectInput = null;
             try{
-                this.socket = socket;
-                objectInput = new ObjectInputStream(socket.getInputStream());
+                tmpObjectInput = new ObjectInputStream(socket.getInputStream());
             } catch (IOException ex){
                 System.out.println("Error opening input stream for thread!");
                 ex.printStackTrace();
             }
+            this.socket = socket;
+            this.objectOutput = objectOutputStream;
+            this.objectInput = tmpObjectInput;
+            this.broadcastOnlineCount();
         }
 
-        public void tellEveryone(ChatMessage chatMessage){
-
-            Iterator<ObjectOutputStream> iterator = clientOutputStreams.iterator();
-            while(iterator.hasNext()){
-                try{
-                    ObjectOutputStream objectOutput = iterator.next();
-                    objectOutput.writeObject(chatMessage);
-                    objectOutput.flush();
-
-                } catch(SocketException ex){
-                    System.out.println("Removing client.");
-                    iterator.remove();
-                } catch (Exception ex){
-                    System.out.println("Error sending message!");
-                    ex.printStackTrace();
+        // Broadcast a serverMessage to all the clients, if a client ObjectOutputStream gets a SocketException
+        // and removes it
+        public void broadcastMessage(ServerMessage serverMessage){
+            synchronized(clientOutputStreams){
+                for(ObjectOutputStream stream : clientOutputStreams){
+                    try{
+                        stream.writeObject(serverMessage);
+                        stream.flush();
+                    } catch(SocketException ex){
+                        System.out.println("Removing client.");
+                        clientOutputStreams.remove(stream);
+                    } catch (Exception ex){
+                        System.out.println("Error sending message!");
+                        ex.printStackTrace();
+                    }
                 }
             }
         }
 
+        // For the future: to add asynchronous broadcasting techniques to process msg in a separate thread
+        public void broadcastOnlineCount() {
+            int currOnlineUser;
+            synchronized (clientOutputStreams){
+                currOnlineUser = clientOutputStreams.size();
+            }
+
+            OnlineCountMessage onlineCountMessage = new OnlineCountMessage(currOnlineUser);
+            this.broadcastMessage(onlineCountMessage);
+        }
+
+        // Reads incoming messages from clients
         @Override
         public void run() {
-            ChatMessage chatMessage;
+            ServerMessage serverMessage;
+            Object message;
 
-            try{
-                while((chatMessage = (ChatMessage) objectInput.readObject()) != null){
-                    System.out.println("Server reads: " + chatMessage.getMessage());
-                    this.tellEveryone(chatMessage);
+            // If the object read is an instance of ChatMessage broadcast it, else ignore it.
+            try(objectInput; objectOutput; socket){
+                while((message = objectInput.readObject()) != null){
 
+                    if(message instanceof ChatMessage){
+                        serverMessage = (ServerMessage) message;
+                        System.out.println("Server reads: " + serverMessage.getMessage());
+                        this.broadcastMessage(serverMessage);
+                    } else {
+                        System.out.println("Unexpected message type: " + message.getClass().getName());
+                    }
                 }
             } catch (SocketException se) {
                 System.out.println("Client disconnected.");
             } catch (Exception ex){
                 System.out.println("Error reading messages!");
                 ex.printStackTrace();
+            } finally {
+                // Remove client's outputStream on disconnection
+                clientOutputStreams.remove(objectOutput);
+                this.broadcastOnlineCount();
             }
         }
     }

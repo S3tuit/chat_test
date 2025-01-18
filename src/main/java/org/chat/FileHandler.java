@@ -1,7 +1,6 @@
 package org.chat;
 
 import javax.swing.*;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -33,23 +32,35 @@ public class FileHandler {
         }
     }
 
-    // Let the user choose a txt file to load in the chat when the message is sent
+    // Let the user choose a file to load in the chat when the message is sent
     // returns the file selected
     public File letUserChooseFile(JFrame frame) {
         JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle("Select a TXT file");
+        chooser.setDialogTitle("Select a File");
         chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-
-        // Filter for just .txt files
-        chooser.setFileFilter(new FileNameExtensionFilter("Text Files", "txt"));
 
         File fileToOpen = null;
         int result = chooser.showOpenDialog(frame);
+
         if (result == JFileChooser.APPROVE_OPTION) {
             fileToOpen = chooser.getSelectedFile();
+
+            if(!isFileValid(fileToOpen)) {
+                JOptionPane.showMessageDialog(
+                        frame,
+                        "The selected file is too large. Please choose a file smaller than 1 MB.",
+                        "File Too Large",
+                        JOptionPane.WARNING_MESSAGE
+                );
+                return null;
+            }
         } else {
             JOptionPane.showMessageDialog(frame, "No file selected");
         }
         return fileToOpen;
+    }
+
+    private Boolean isFileValid(File file) {
+        return file.length() < (1 * 1024 * 1024);
     }
 }

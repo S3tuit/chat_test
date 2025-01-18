@@ -1,8 +1,10 @@
 package org.chat;
 
-import java.io.Serializable;
 
-public class ChatMessage implements Serializable {
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+public class ChatMessage extends ServerMessage {
     private final String message;
     private byte[] fileAttached;
     private String fileName;
@@ -25,11 +27,35 @@ public class ChatMessage implements Serializable {
         return fileAttached;
     }
 
+    @Override
     public String getMessage() {
         return message;
     }
 
     public String getFileName() {
         return fileName;
+    }
+
+    @Override
+    public void process() {
+        ActionListener saveFileAC = new SaveFileButtonListener();
+        getChatGui().appendMessage(this, saveFileAC);
+        System.out.println("Chat reads: " + message);
+    }
+
+    // Action listener for the "Save File" button next to incoming messages.
+    // When the user clicks it saves the byte[] stored in the ChatMessage at root/filename.
+    public class SaveFileButtonListener implements ActionListener {
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            if(isFileAttached()) {
+                String fileName = getFileName();
+                byte[] fileData = getFileAttached();
+                FileHandler.saveBytesToFile(fileName, fileData);
+            } else {
+                System.out.println("File not attached");
+            }
+        }
     }
 }
