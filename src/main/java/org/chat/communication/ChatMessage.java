@@ -1,5 +1,7 @@
-package org.chat;
+package org.chat.communication;
 
+
+import org.chat.gui.FileHandler;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -8,15 +10,22 @@ public class ChatMessage extends ServerMessage {
     private final String message;
     private byte[] fileAttached;
     private String fileName;
+    private String senderName;
 
-    public ChatMessage(String message) {
+    public ChatMessage(String message, String senderName) {
         this.message = message;
+        this.senderName = senderName;
     }
 
-    public ChatMessage(String message, byte[] fileAttached, String fileName) {
+    public ChatMessage(String message, byte[] fileAttached, String fileName, String senderName) {
         this.message = message;
         this.fileAttached = fileAttached;
         this.fileName = fileName;
+        this.senderName = senderName;
+    }
+
+    public String getSenderName(){
+        return this.senderName;
     }
 
     public boolean isFileAttached() {

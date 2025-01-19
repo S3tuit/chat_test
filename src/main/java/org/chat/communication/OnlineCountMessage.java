@@ -1,6 +1,6 @@
-package org.chat;
+package org.chat.communication;
 
-public class OnlineCountMessage extends ServerMessage{
+public class OnlineCountMessage extends ServerMessage {
 
     int currOnlineUsers;
 

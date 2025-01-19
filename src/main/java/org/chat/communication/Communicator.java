@@ -1,4 +1,6 @@
-package org.chat;
+package org.chat.communication;
+
+import org.chat.gui.ChatGui;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;

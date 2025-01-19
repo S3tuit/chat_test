@@ -1,13 +1,13 @@
-package org.chat;
+package org.chat.gui;
+
+import org.chat.communication.ChatMessage;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.io.File;
 
-public class ChatGui {
-
-    private JFrame chatFrame;
+public class ChatGui extends BaseFrame{
 
     private JPanel incomingMsgPanel;
 
@@ -22,16 +22,9 @@ public class ChatGui {
     private JLabel onlineUserCountLabel;
 
     public void buildChatGui(ActionListener sendAC, ActionListener loadAC) {
-
-        // Set modern look and feel
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception ignored) {}
-
-        chatFrame = new JFrame("Chat");
-        chatFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        chatFrame.setSize(400, 600);
-        chatFrame.setLayout(new BorderLayout(10, 10));
+        // Config the frame
+        super.initialize("Chat");
+        this.setLayout(new BorderLayout(10, 10));
 
         this.buildIncomingMsgPanel();
 
@@ -40,7 +33,7 @@ public class ChatGui {
         this.buildOnlineUsersPanel();
 
         // more frame settings
-        chatFrame.setVisible(true);
+        this.setVisible(true);
     }
 
     private void buildOnlineUsersPanel(){
@@ -52,7 +45,7 @@ public class ChatGui {
         onlineUserCountLabel = new JLabel("<html><b>People online:</b> " + 1 + "</html>");
         onlineUserPanel.add(onlineUserCountLabel, BorderLayout.NORTH);
 
-        chatFrame.add(onlineUserPanel, BorderLayout.WEST);
+        this.add(onlineUserPanel, BorderLayout.WEST);
     }
 
     private void buildIncomingMsgPanel() {
@@ -66,7 +59,7 @@ public class ChatGui {
         chatScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         chatScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
-        chatFrame.add(chatScrollPane, BorderLayout.CENTER);
+        this.add(chatScrollPane, BorderLayout.CENTER);
     }
 
     private void buildOutgoingMsgPanel(ActionListener sendAC, ActionListener loadAC) {
@@ -82,7 +75,7 @@ public class ChatGui {
         JPanel buttonPanel = this.buildButtonPanel(sendAC, loadAC);
         outgoingMsgPanel.add(buttonPanel, BorderLayout.EAST);
 
-        chatFrame.add(outgoingMsgPanel, BorderLayout.SOUTH);
+        this.add(outgoingMsgPanel, BorderLayout.SOUTH);
     }
 
     private JPanel buildButtonPanel(ActionListener sendAC, ActionListener loadAC) {
@@ -110,7 +103,7 @@ public class ChatGui {
     public void appendMessage(ChatMessage chatMessage, ActionListener saveFileAC) {
         // Create a panel for the message
         JPanel messagePanel = new JPanel(new BorderLayout(5, 5));
-        messagePanel.setBorder(BorderFactory.createTitledBorder(""));
+        messagePanel.setBorder(BorderFactory.createTitledBorder(chatMessage.getSenderName()));
 
         // Add text message
         JTextArea messageText = new JTextArea(chatMessage.getMessage());
@@ -177,10 +170,6 @@ public class ChatGui {
         outgoingMsgPanel.repaint();
 
         return filePath;
-    }
-
-    public JFrame getChatFrame() {
-        return chatFrame;
     }
 
     public String getFileAttachedName() {

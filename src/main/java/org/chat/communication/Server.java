@@ -1,4 +1,4 @@
-package org.chat;
+package org.chat.communication;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;

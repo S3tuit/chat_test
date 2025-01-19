@@ -1,4 +1,4 @@
-package org.chat;
+package org.chat.gui;
 
 import javax.swing.*;
 import java.io.File;
