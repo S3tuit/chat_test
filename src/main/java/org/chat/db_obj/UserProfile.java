@@ -34,4 +34,12 @@ public class UserProfile {
 
         return randomString.toString();
     }
+
+    public long getUserID() {
+        return userID;
+    }
+
+    public void setUserID(long userID) {
+        this.userID = userID;
+    }
 }

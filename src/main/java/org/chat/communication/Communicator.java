@@ -1,5 +1,6 @@
 package org.chat.communication;
 
+import org.chat.ChatApp;
 import org.chat.gui.ChatGui;
 
 import java.io.IOException;
@@ -13,9 +14,11 @@ public class Communicator {
     private ObjectInputStream inputStream;
     private Socket socket;
     private ChatGui chatGui;
+    private ChatApp chatApp;
 
-    public Communicator(ChatGui chatGui) {
+    public Communicator(ChatGui chatGui, ChatApp chatApp) {
         this.chatGui = chatGui;
+        this.chatApp = chatApp;
     }
 
     public void start(){
@@ -39,6 +42,11 @@ public class Communicator {
     }
 
     public void sendMessage(ChatMessage chatMessage){
+        if(!chatApp.authenticate()){
+            chatApp.logout();
+            return;
+        }
+
         try{
             outputStream.writeObject(chatMessage);
             outputStream.flush();
@@ -57,6 +65,12 @@ public class Communicator {
 
             try{
                 while ((serverMessage = (ServerMessage) inputStream.readObject()) != null){
+
+                    if(!chatApp.authenticate()){
+                        Thread.currentThread().interrupt();
+                        chatApp.logout();
+                        return;
+                    }
 
                     serverMessage.setChatGui(chatGui);
                     serverMessage.process();

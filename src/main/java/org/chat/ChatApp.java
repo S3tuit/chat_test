@@ -30,8 +30,8 @@ public class ChatApp {
 
     public ChatApp() {
         chatGui = new ChatGui();
-        communicator = new Communicator(chatGui);
         fileHandler = new FileHandler();
+        currUserSession = new UserSession();
     }
 
     public void startLogin(){
@@ -41,10 +41,21 @@ public class ChatApp {
     }
 
     public void startChat(){
+        communicator = new Communicator(chatGui, this);
+
         SendButtonListener sendAC = new SendButtonListener();
         LoadButtonActionListener loadAC = new LoadButtonActionListener();
         chatGui.buildChatGui(sendAC, loadAC);
         communicator.start();
+    }
+
+    public boolean authenticate(){
+        return currUserSession.authenticate();
+    }
+
+    public void logout(){
+        chatGui.dispose();
+        this.startLogin();
     }
 
     public class SendButtonListener implements ActionListener {
@@ -80,19 +91,17 @@ public class ChatApp {
             String username = loginGui.getUsername();
             String password = loginGui.getPassword();
 
-            UserSession userSession = ChatJDBC.validateLogin(username, password, UUID.randomUUID());
-
-            // valid credentials for login
-            if(userSession != null){
+            if (currUserSession.validateLogin(username, password, UUID.randomUUID())){
+                // valid credentials and session
                 loginGui.dispose();
 
-                currUserSession = userSession;
                 startChat();
                 JOptionPane.showMessageDialog(chatGui, "Login Successful!");
             } else {
                 // invalid login
                 JOptionPane.showMessageDialog(chatGui, "Invalid username or password :(");
             }
+
         }
     }
 }
