@@ -1,9 +1,8 @@
 package org.chat.db_obj;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import org.chat.ChatApp;
+
+import java.sql.*;
 import java.util.UUID;
 
 // config for db connection
@@ -13,14 +12,18 @@ public class UserSession {
 
     private UUID token;
     private UserProfile profile;
-    Thread threadUpdLastAccess = null;
+    private Thread threadUpdLastAccess = null;
+    private ChatApp chatApp;
 
-    public UserSession(UUID token, UserProfile userProfile) {
+    public UserSession(UUID token, UserProfile userProfile, ChatApp chatApp) {
         this.token = token;
         this.profile = userProfile;
+        this.chatApp = chatApp;
     }
 
-    public UserSession() {}
+    public UserSession(ChatApp chatApp) {
+        this.chatApp = chatApp;
+    }
 
     public String getUsername() {
         return profile.getUsername();
@@ -131,6 +134,7 @@ public class UserSession {
 
         if (threadUpdLastAccess == null || !threadUpdLastAccess.isAlive()) {
             threadUpdLastAccess = new Thread(new UpdateLastAccess());
+            chatApp.addAppThread(threadUpdLastAccess);
             threadUpdLastAccess.start();
         }
     }
@@ -165,21 +169,25 @@ public class UserSession {
 
         @Override
         public void run() {
-            while (true) {
-                try (Connection conn = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD)) {
-                    updateSession(conn, getUserId());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
+            while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    // Sleep for 4 minutes and 30 seconds
+                    updateDatabase();
                     Thread.sleep(4 * 60 * 1000 + 30 * 1000);
+
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt(); // Restore interrupted status
                     break;
+                } catch (SQLException e) {
+                    e.printStackTrace();
                 }
             }
         }
+
+        private void updateDatabase() throws SQLException {
+            try (Connection conn = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD)) {
+                updateSession(conn, getUserId());
+            }
+        }
+
     }
 }
