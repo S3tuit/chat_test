@@ -2,8 +2,6 @@ package org.chat;
 
 import org.chat.communication.ChatMessage;
 import org.chat.communication.Communicator;
-import org.chat.db_obj.ChatJDBC;
-import org.chat.db_obj.UserProfile;
 import org.chat.db_obj.UserSession;
 import org.chat.gui.ChatGui;
 import org.chat.gui.FileHandler;
@@ -13,6 +11,8 @@ import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class ChatApp {
@@ -22,6 +22,7 @@ public class ChatApp {
     Communicator communicator;
     FileHandler fileHandler;
     UserSession currUserSession;
+    List<Thread> appThreads = new ArrayList<Thread>();
 
     public static void main(String[] args) {
         ChatApp chatApp = new ChatApp();
@@ -31,7 +32,7 @@ public class ChatApp {
     public ChatApp() {
         chatGui = new ChatGui();
         fileHandler = new FileHandler();
-        currUserSession = new UserSession();
+        currUserSession = new UserSession(this);
     }
 
     public void startLogin(){
@@ -53,9 +54,34 @@ public class ChatApp {
         return currUserSession.authenticate();
     }
 
+    private void stopAllThreads(){
+        for (Thread t : appThreads) {
+            if (t != null && t.isAlive()) {t.interrupt();}
+        }
+        appThreads.clear();
+    }
+
+    public void addAppThread(Thread appThread){
+        synchronized (appThreads){
+            appThreads.add(appThread);
+        }
+    }
+
     public void logout(){
+        this.stopAllThreads();
+
+
+        // Clear the interrupted status of the current thread
+        if (Thread.currentThread().isInterrupted()) {
+            Thread.interrupted();
+        }
+
         chatGui.dispose();
+
+        chatGui = new ChatGui();
+        currUserSession = new UserSession(this);
         this.startLogin();
+        JOptionPane.showMessageDialog(loginGui, "Sorry, you've been logged out :(", "Re-login, please", JOptionPane.WARNING_MESSAGE);
     }
 
     public class SendButtonListener implements ActionListener {

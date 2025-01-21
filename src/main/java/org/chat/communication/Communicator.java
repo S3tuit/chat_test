@@ -24,6 +24,7 @@ public class Communicator {
     public void start(){
         this.setUpNetworking();
         Thread thread = new Thread(new IncomingReader());
+        chatApp.addAppThread(thread);
         thread.start();
     }
 
@@ -64,7 +65,8 @@ public class Communicator {
             ServerMessage serverMessage;
 
             try{
-                while ((serverMessage = (ServerMessage) inputStream.readObject()) != null){
+                while (!Thread.currentThread().isInterrupted() &&
+                        (serverMessage = (ServerMessage) inputStream.readObject()) != null){
 
                     if(!chatApp.authenticate()){
                         Thread.currentThread().interrupt();
@@ -76,8 +78,22 @@ public class Communicator {
                     serverMessage.process();
 
                 }
-            } catch (Exception e) {
+            } catch (IOException | ClassNotFoundException e) {
                 System.out.println("Error reading the message in the chat");
+                e.printStackTrace();
+            } finally {
+                // Perform cleanup
+                closeResources();
+            }
+        }
+
+        private void closeResources(){
+            try{
+                if(inputStream != null){
+                    inputStream.close();
+                }
+            } catch (IOException e){
+                System.out.println("Error closing the input stream");
                 e.printStackTrace();
             }
         }
