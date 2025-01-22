@@ -87,4 +87,16 @@ public class LoginGui extends BaseFrame{
         usernameField.setText("");
         return tmpUsername;
     }
+
+    public boolean askToInvalidateCurrSession() {
+        int choice = JOptionPane.showConfirmDialog(
+                null,
+                "There is already an active session. Do you want to invalidate it?",
+                "Active Session Detected",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+        );
+        // Return true if the user chooses "Yes", otherwise false
+        return choice == JOptionPane.YES_OPTION;
+    }
 }

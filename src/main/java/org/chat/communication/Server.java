@@ -66,7 +66,7 @@ public class Server {
         }
 
         // Broadcast a serverMessage to all the clients, if a client ObjectOutputStream gets a SocketException
-        // and removes it
+        // removes it
         public void broadcastMessage(ServerMessage serverMessage){
             synchronized(clientOutputStreams){
                 for(ObjectOutputStream stream : clientOutputStreams){
@@ -84,7 +84,7 @@ public class Server {
             }
         }
 
-        // For the future: to add asynchronous broadcasting techniques to process msg in a separate thread
+        // For the future: to add asynchronous broadcasting to process msg in a separate thread
         public void broadcastOnlineCount() {
             int currOnlineUser;
             synchronized (clientOutputStreams){
@@ -94,6 +94,8 @@ public class Server {
             OnlineCountMessage onlineCountMessage = new OnlineCountMessage(currOnlineUser);
             this.broadcastMessage(onlineCountMessage);
         }
+
+        public void broadcastOnlineUsers(){}
 
         // Reads incoming messages from clients
         @Override
