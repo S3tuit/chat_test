@@ -117,17 +117,32 @@ public class ChatApp {
             String username = loginGui.getUsername();
             String password = loginGui.getPassword();
 
-            if (currUserSession.validateLogin(username, password, UUID.randomUUID())){
+            int loginValidity = currUserSession.validateLogin(username, password, UUID.randomUUID());
+
+            if (loginValidity == 1 || loginValidity == 2) {
                 // valid credentials and session
                 loginGui.dispose();
 
                 startChat();
                 JOptionPane.showMessageDialog(chatGui, "Login Successful!");
-            } else {
+            } else if (loginValidity == 0) {
                 // invalid login
                 JOptionPane.showMessageDialog(chatGui, "Invalid username or password :(");
+            } else if (loginValidity == 3) {
+                // there already is an active session with a different token, asks the user if he wants to invalidate
+                // the active session
+                if (loginGui.askToInvalidateCurrSession()){
+                    currUserSession.invalidateOtherSessions();
+
+                    loginGui.dispose();
+
+                    startChat();
+                    JOptionPane.showMessageDialog(chatGui, "Login Successful!");
+                }
             }
 
         }
+
+
     }
 }

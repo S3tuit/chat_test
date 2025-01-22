@@ -6,6 +6,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.util.List;
 
 public class ChatGui extends BaseFrame{
 
@@ -20,6 +21,7 @@ public class ChatGui extends BaseFrame{
 
     private JPanel onlineUserPanel;
     private JLabel onlineUserCountLabel;
+    private JPanel showOnlineUserPanel;
 
     public void buildChatGui(ActionListener sendAC, ActionListener loadAC) {
         // Config the frame
@@ -39,11 +41,14 @@ public class ChatGui extends BaseFrame{
     private void buildOnlineUsersPanel(){
         // OnlineUsers panel
         onlineUserPanel = new JPanel();
-        onlineUserPanel = new JPanel(new BorderLayout(10, 10));
+        onlineUserPanel = new JPanel(new BoxLayout(onlineUserPanel, BoxLayout.Y_AXIS));
         onlineUserPanel.setBorder(BorderFactory.createTitledBorder("Friends"));
 
         onlineUserCountLabel = new JLabel("<html><b>People online:</b> " + 1 + "</html>");
-        onlineUserPanel.add(onlineUserCountLabel, BorderLayout.NORTH);
+        onlineUserPanel.add(onlineUserCountLabel);
+
+        showOnlineUserPanel = new JPanel(new BoxLayout(onlineUserPanel, BoxLayout.Y_AXIS));
+        onlineUserPanel.add(showOnlineUserPanel);
 
         this.add(onlineUserPanel, BorderLayout.WEST);
     }
@@ -91,6 +96,17 @@ public class ChatGui extends BaseFrame{
 
     public void updateOnlineUserCount(int onlineUserCount) {
         onlineUserCountLabel.setText("<html><b>People online:</b> " + onlineUserCount + "</html>");
+    }
+
+    // appends each username under the online users count
+    public void updateOnlineUser(List<String> onlineUsernames) {
+        showOnlineUserPanel.removeAll();
+        for (String username : onlineUsernames) {
+            onlineUserPanel.add(new JLabel(username));
+        }
+
+        showOnlineUserPanel.revalidate();
+        showOnlineUserPanel.repaint();
     }
 
     // helper method to create buttons faster
