@@ -47,7 +47,7 @@ public class ChatApp {
         SendButtonListener sendAC = new SendButtonListener();
         LoadButtonActionListener loadAC = new LoadButtonActionListener();
         chatGui.buildChatGui(sendAC, loadAC);
-        communicator.start();
+        communicator.start(currUserSession);
     }
 
     public boolean authenticate(){
