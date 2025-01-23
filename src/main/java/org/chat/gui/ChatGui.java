@@ -21,7 +21,7 @@ public class ChatGui extends BaseFrame{
 
     private JPanel onlineUserPanel;
     private JLabel onlineUserCountLabel;
-    private JPanel showOnlineUserPanel;
+    private JPanel onlineUsernamesPanel;
 
     public void buildChatGui(ActionListener sendAC, ActionListener loadAC) {
         // Config the frame
@@ -41,14 +41,15 @@ public class ChatGui extends BaseFrame{
     private void buildOnlineUsersPanel(){
         // OnlineUsers panel
         onlineUserPanel = new JPanel();
-        onlineUserPanel = new JPanel(new BoxLayout(onlineUserPanel, BoxLayout.Y_AXIS));
+        onlineUserPanel.setLayout(new BoxLayout(onlineUserPanel, BoxLayout.Y_AXIS));
         onlineUserPanel.setBorder(BorderFactory.createTitledBorder("Friends"));
 
         onlineUserCountLabel = new JLabel("<html><b>People online:</b> " + 1 + "</html>");
         onlineUserPanel.add(onlineUserCountLabel);
 
-        showOnlineUserPanel = new JPanel(new BoxLayout(onlineUserPanel, BoxLayout.Y_AXIS));
-        onlineUserPanel.add(showOnlineUserPanel);
+        onlineUsernamesPanel = new JPanel();
+        onlineUsernamesPanel.setLayout(new BoxLayout(onlineUsernamesPanel, BoxLayout.Y_AXIS));
+        onlineUserPanel.add(onlineUsernamesPanel);
 
         this.add(onlineUserPanel, BorderLayout.WEST);
     }
@@ -99,14 +100,14 @@ public class ChatGui extends BaseFrame{
     }
 
     // appends each username under the online users count
-    public void updateOnlineUser(List<String> onlineUsernames) {
-        showOnlineUserPanel.removeAll();
+    public void updateOnlineUsername(List<String> onlineUsernames) {
+        onlineUsernamesPanel.removeAll();
         for (String username : onlineUsernames) {
-            onlineUserPanel.add(new JLabel(username));
+            onlineUsernamesPanel.add(new JLabel(username));
         }
 
-        showOnlineUserPanel.revalidate();
-        showOnlineUserPanel.repaint();
+        onlineUsernamesPanel.revalidate();
+        onlineUsernamesPanel.repaint();
     }
 
     // helper method to create buttons faster
