@@ -5,8 +5,6 @@ import org.chat.ChatApp;
 import java.sql.*;
 import java.util.UUID;
 
-// config for db connection
-import static org.chat.db_obj.ChatJDBC.*;
 
 public class UserSession {
 
@@ -14,6 +12,10 @@ public class UserSession {
     private UserProfile profile;
     private Thread threadUpdLastAccess = null;
     private ChatApp chatApp;
+
+    private final String DB_URL = ConfigLoader.getProperty("db.url");
+    private final String DB_USERNAME = ConfigLoader.getProperty("db.username");
+    private final String DB_PASSWORD = ConfigLoader.getProperty("db.password");
 
     public UserSession(UUID token, UserProfile userProfile, ChatApp chatApp) {
         this.token = token;

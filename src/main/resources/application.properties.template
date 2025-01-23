@@ -1,0 +1,7 @@
+# Instructions
+1. Copy `application.properties.template` to `application.properties`.
+2. Fill in the appropriate values for your environment.
+
+db.url=your_url
+db.username=your_username
+db.password=your_password
