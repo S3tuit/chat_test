@@ -76,6 +76,10 @@ public class Communicator {
 
                     if(!chatApp.authenticate()){
                         Thread.currentThread().interrupt();
+
+                        // make server understand it should disconnect the client before showing the gui
+                        // solves bug: the connection remain opened until chatApp.logout(); returns.
+                        closeResources();
                         chatApp.logout();
                         return;
                     }

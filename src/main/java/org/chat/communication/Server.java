@@ -1,5 +1,6 @@
 package org.chat.communication;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -131,7 +132,7 @@ public class Server {
                         System.out.println("Unexpected message type: " + message.getClass().getName());
                     }
                 }
-            } catch (SocketException se) {
+            } catch (SocketException | EOFException ex) {
                 System.out.println("Client disconnected.");
             } catch (Exception ex){
                 System.out.println("Error reading messages!");
