@@ -7,13 +7,17 @@ public class OnlineUsersMessage extends ServerMessage{
 
     List<String> onlineUsers = new ArrayList<String>();
 
+    public OnlineUsersMessage(List<String> onlineUsers) {
+        this.onlineUsers = onlineUsers;
+    }
+
     @Override
     public void process() {
-        super.getChatGui().updateOnlineUser(onlineUsers);
+        super.getChatGui().updateOnlineUsername(onlineUsers);
     }
 
     @Override
     public String getMessage() {
-        return "";
+        return String.join(", ", onlineUsers);
     }
 }

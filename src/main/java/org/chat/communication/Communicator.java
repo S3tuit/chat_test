@@ -1,6 +1,7 @@
 package org.chat.communication;
 
 import org.chat.ChatApp;
+import org.chat.db_obj.UserSession;
 import org.chat.gui.ChatGui;
 
 import java.io.IOException;
@@ -21,19 +22,24 @@ public class Communicator {
         this.chatApp = chatApp;
     }
 
-    public void start(){
-        this.setUpNetworking();
+    public void start(UserSession userSession){
+        this.setUpNetworking(userSession);
         Thread thread = new Thread(new IncomingReader());
         chatApp.addAppThread(thread);
         thread.start();
     }
 
-    private void setUpNetworking(){
+    private void setUpNetworking(UserSession userSession){
         try{
+            // Establish a connection with the server
             socket = new Socket("127.0.0.1", 4242);
             inputStream = new ObjectInputStream(socket.getInputStream());
 
+            // Send the username to the server
             outputStream = new ObjectOutputStream(socket.getOutputStream());
+            outputStream.writeObject(userSession.getUsername());
+            outputStream.flush();
+
             System.out.println("Connected to server");
 
         } catch (IOException e){
@@ -70,6 +76,10 @@ public class Communicator {
 
                     if(!chatApp.authenticate()){
                         Thread.currentThread().interrupt();
+
+                        // make server understand it should disconnect the client before showing the gui
+                        // solves bug: the connection remain opened until chatApp.logout(); returns.
+                        closeResources();
                         chatApp.logout();
                         return;
                     }

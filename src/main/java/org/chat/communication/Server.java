@@ -1,5 +1,6 @@
 package org.chat.communication;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -9,10 +10,11 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Server {
 
-    private List<ObjectOutputStream> clientOutputStreams;
+    private List<ServerClient> serverClients;
 
     public static void main(String[] args) {
         Server server = new Server();
@@ -20,7 +22,7 @@ public class Server {
     }
 
     public Server() {
-        this.clientOutputStreams = Collections.synchronizedList(new ArrayList<>());
+        this.serverClients = Collections.synchronizedList(new ArrayList<>());
     }
 
     public void start(){
@@ -30,16 +32,25 @@ public class Server {
             while(true){
                 Socket clientSocket = serverSocket.accept();
                 ObjectOutputStream objectOutput = new ObjectOutputStream(clientSocket.getOutputStream());
-                clientOutputStreams.add(objectOutput);
+
+                // Read the username of the client
+                ObjectInputStream objectInput = new ObjectInputStream(clientSocket.getInputStream());
+                String username = (String) objectInput.readObject();
+                ServerClient serverClient = new ServerClient(objectOutput, username);
+
+                serverClients.add(serverClient);
 
                 // Thread to read msg sent by clients
-                Thread thread = new Thread(new ClientHandler(clientSocket, objectOutput));
+                Thread thread = new Thread(new ClientHandler(clientSocket, serverClient, objectInput));
                 thread.start();
-                System.out.println("Client connected! \nClients connected: " + clientOutputStreams.size());
+                System.out.println("Client connected! \nClients connected: " + serverClients.size());
             }
 
         } catch (IOException ex){
             System.out.println("Server Error!");
+            ex.printStackTrace();
+        } catch (ClassNotFoundException | ClassCastException ex) {
+            System.out.println("Server got a message, during client registration, that was not a String!");
             ex.printStackTrace();
         }
     }
@@ -48,34 +59,26 @@ public class Server {
     public class ClientHandler implements Runnable {
         final ObjectInputStream objectInput;
         final Socket socket;
-        final ObjectOutputStream objectOutput;
+        final ServerClient serverClient;
 
-        public ClientHandler(Socket socket, ObjectOutputStream objectOutputStream){
-            // Used tmp for variable assignment to make objectInput final
-            ObjectInputStream tmpObjectInput = null;
-            try{
-                tmpObjectInput = new ObjectInputStream(socket.getInputStream());
-            } catch (IOException ex){
-                System.out.println("Error opening input stream for thread!");
-                ex.printStackTrace();
-            }
+        public ClientHandler(Socket socket, ServerClient serverClient, ObjectInputStream objectInput) {
             this.socket = socket;
-            this.objectOutput = objectOutputStream;
-            this.objectInput = tmpObjectInput;
-            this.broadcastOnlineCount();
+            this.serverClient = serverClient;
+            this.objectInput = objectInput;
+            this.broadcastOnlineUsers();
         }
 
-        // Broadcast a serverMessage to all the clients, if a client ObjectOutputStream gets a SocketException
+        // Broadcast a serverMessage to all the clients, if a client ObjectOutputStream gets a SocketException and
         // removes it
         public void broadcastMessage(ServerMessage serverMessage){
-            synchronized(clientOutputStreams){
-                for(ObjectOutputStream stream : clientOutputStreams){
+            synchronized(serverClients){
+                for(ServerClient client : serverClients){
                     try{
-                        stream.writeObject(serverMessage);
-                        stream.flush();
+                        client.getObjectOut().writeObject(serverMessage);
+                        client.getObjectOut().flush();
                     } catch(SocketException ex){
                         System.out.println("Removing client.");
-                        clientOutputStreams.remove(stream);
+                        serverClients.remove(client);
                     } catch (Exception ex){
                         System.out.println("Error sending message!");
                         ex.printStackTrace();
@@ -87,15 +90,29 @@ public class Server {
         // For the future: to add asynchronous broadcasting to process msg in a separate thread
         public void broadcastOnlineCount() {
             int currOnlineUser;
-            synchronized (clientOutputStreams){
-                currOnlineUser = clientOutputStreams.size();
+            synchronized (serverClients){
+                currOnlineUser = serverClients.size();
             }
 
             OnlineCountMessage onlineCountMessage = new OnlineCountMessage(currOnlineUser);
             this.broadcastMessage(onlineCountMessage);
         }
 
-        public void broadcastOnlineUsers(){}
+        // send the username of all active users to all clients
+        public void broadcastOnlineUsers(){
+            // sends the num of active users to all clients
+            this.broadcastOnlineCount();
+
+            List<String> usernames;
+            synchronized (serverClients){
+                usernames = serverClients.stream()
+                        .map(ServerClient::getUsername)
+                        .toList();
+            }
+
+            OnlineUsersMessage onlineUsersMessage = new OnlineUsersMessage(usernames);
+            this.broadcastMessage(onlineUsersMessage);
+        }
 
         // Reads incoming messages from clients
         @Override
@@ -104,7 +121,7 @@ public class Server {
             Object message;
 
             // If the object read is an instance of ChatMessage broadcast it, else ignore it.
-            try(objectInput; objectOutput; socket){
+            try(objectInput; socket){
                 while((message = objectInput.readObject()) != null){
 
                     if(message instanceof ChatMessage){
@@ -115,15 +132,21 @@ public class Server {
                         System.out.println("Unexpected message type: " + message.getClass().getName());
                     }
                 }
-            } catch (SocketException se) {
+            } catch (SocketException | EOFException ex) {
                 System.out.println("Client disconnected.");
             } catch (Exception ex){
                 System.out.println("Error reading messages!");
                 ex.printStackTrace();
             } finally {
+                try {
+                    serverClient.getObjectOut().close();
+                } catch (IOException e) {
+                    System.out.println("Error closing output stream!");
+                    e.printStackTrace();
+                }
                 // Remove client's outputStream on disconnection
-                clientOutputStreams.remove(objectOutput);
-                this.broadcastOnlineCount();
+                serverClients.remove(serverClient);
+                this.broadcastOnlineUsers();
             }
         }
     }
