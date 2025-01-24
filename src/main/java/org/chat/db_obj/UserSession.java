@@ -13,10 +13,6 @@ public class UserSession {
     private Thread threadUpdLastAccess = null;
     private ChatApp chatApp;
 
-    private final String DB_URL = ConfigLoader.getProperty("db.url");
-    private final String DB_USERNAME = ConfigLoader.getProperty("db.username");
-    private final String DB_PASSWORD = ConfigLoader.getProperty("db.password");
-
     public UserSession(UUID token, UserProfile userProfile, ChatApp chatApp) {
         this.token = token;
         this.profile = userProfile;
@@ -45,7 +41,7 @@ public class UserSession {
 
     // If the username and password present in DB, assigns them to the instance variables and return true, else false.
     public int validateLogin(String username, String password, UUID sessionToken) {
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD)) {
+        try (Connection conn = DatabaseConnectionPool.getConnection()) {
             PreparedStatement ps = conn.prepareStatement("select id from users where username = ? and password = ?");
 
             ps.setString(1, username);
@@ -57,15 +53,15 @@ public class UserSession {
             if (rs.next()) {
 
                 long userId = rs.getLong("id");
-                int sessionValidity = isValidSession(conn, userId, sessionToken);
+                int sessionValidity = isValidSession(userId, sessionToken);
                 this.setSession(sessionToken, new UserProfile(username, userId));
 
                 switch (sessionValidity) {
                     case 1:
-                        insertNewSession(conn, userId, sessionToken);
+                        insertNewSession(userId, sessionToken);
                         return 1;
                     case 2:
-                        updateSession(conn, userId);
+                        updateThisSession();
                         return 2;
                     case 3:
                         return 3;
@@ -74,7 +70,7 @@ public class UserSession {
                 }
             }
 
-        } catch (Exception e) {
+        } catch (SQLException e) {
             throw new RuntimeException(e);
         }
 
@@ -85,9 +81,9 @@ public class UserSession {
     // return 1 if session with different token and a last_access older than 5 minutes ago... or no session.
     // return 2 if there already is a session with the same token.
     // return 3 if there already is a session with a different token and a last_access in 5 minutes ago.
-    public int isValidSession(Connection conn, long userId, UUID sessionToken) {
+    public int isValidSession(long userId, UUID sessionToken) {
 
-        try {
+        try(Connection conn = DatabaseConnectionPool.getConnection()) {
             PreparedStatement ps = conn.prepareStatement("" +
                     "select token " +
                     "from session " +
@@ -104,13 +100,13 @@ public class UserSession {
                 return 1;
             }
 
-        } catch (Exception e) {
+        } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public void insertNewSession(Connection conn, long userId, UUID sessionToken) {
-        try {
+    public void insertNewSession(long userId, UUID sessionToken) {
+        try(Connection conn = DatabaseConnectionPool.getConnection()) {
             PreparedStatement ps = conn.prepareStatement("delete from session where user_id = ?;");
             ps.setLong(1, userId);
             ps.executeUpdate();
@@ -122,21 +118,21 @@ public class UserSession {
             ps.setString(2, sessionToken.toString());
             ps.executeUpdate();
 
-        } catch (Exception e) {
+        } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public void updateSession(Connection conn, long userId) {
-        try {
+    public void updateThisSession() {
+        try(Connection conn = DatabaseConnectionPool.getConnection()) {
             PreparedStatement ps = conn.prepareStatement("" +
                     "update session " +
                     "set last_access = current_timestamp " +
                     "where user_id = ?;");
-            ps.setLong(1, userId);
+            ps.setLong(1, getUserId());
             ps.executeUpdate();
 
-        } catch (Exception e) {
+        } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
@@ -154,7 +150,7 @@ public class UserSession {
 
     public void invalidateOtherSessions() {
 
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD)) {
+        try (Connection conn = DatabaseConnectionPool.getConnection()) {
             PreparedStatement ps = conn.prepareStatement("" +
                     "delete " +
                     "from session " +
@@ -162,7 +158,7 @@ public class UserSession {
             ps.setLong(1, this.getUserId());
             ps.executeUpdate();
 
-            this.insertNewSession(conn, this.getUserId(), this.token);
+            this.insertNewSession(this.getUserId(), this.token);
 
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -175,7 +171,7 @@ public class UserSession {
             return false;
         }
 
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD)) {
+        try (Connection conn = DatabaseConnectionPool.getConnection()) {
             PreparedStatement ps = conn.prepareStatement("" +
                     "select 1 " +
                     "from session " +
@@ -188,7 +184,7 @@ public class UserSession {
             if (rs.next()) {
                 return true;
             }
-        } catch (Exception e) {
+        } catch (SQLException e) {
             e.printStackTrace();
         }
 
@@ -201,21 +197,13 @@ public class UserSession {
         public void run() {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    updateDatabase();
+                    updateThisSession();
                     Thread.sleep(4 * 60 * 1000 + 30 * 1000);
 
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt(); // Restore interrupted status
                     break;
-                } catch (SQLException e) {
-                    e.printStackTrace();
                 }
-            }
-        }
-
-        private void updateDatabase() throws SQLException {
-            try (Connection conn = DriverManager.getConnection(DB_URL, DB_USERNAME, DB_PASSWORD)) {
-                updateSession(conn, getUserId());
             }
         }
 

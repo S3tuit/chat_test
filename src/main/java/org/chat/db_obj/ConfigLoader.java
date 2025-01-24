@@ -8,11 +8,11 @@ public class ConfigLoader {
     private static final Properties prop = new Properties();
 
     static {
-        try (InputStream in = ConfigLoader.class.getResourceAsStream("application.properties")) {
-            if (in == null) {
+        try (InputStream input = ConfigLoader.class.getClassLoader().getResourceAsStream("application.properties")) {
+            if (input == null) {
                 throw new RuntimeException("Configuration file not found");
             }
-            prop.load(in);
+            prop.load(input);
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to load configuration", e);
