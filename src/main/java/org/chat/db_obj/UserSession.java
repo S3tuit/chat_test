@@ -39,7 +39,8 @@ public class UserSession {
         return token;
     }
 
-    // If the username and password present in DB, assigns them to the instance variables and return true, else false.
+    // If the username and password present in DB, assigns them to the current instance variables.
+    // return logic similar to the one of isValidSession.
     public int validateLogin(String username, String password, UUID sessionToken) {
         try (Connection conn = DatabaseConnectionPool.getConnection()) {
             PreparedStatement ps = conn.prepareStatement("select id from users where username = ? and password = ?");

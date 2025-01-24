@@ -30,7 +30,6 @@ public class ChatApp {
     }
 
     public ChatApp() {
-        chatGui = new ChatGui();
         fileHandler = new FileHandler();
         currUserSession = new UserSession(this);
     }
@@ -42,6 +41,7 @@ public class ChatApp {
     }
 
     public void startChat(){
+        chatGui = new ChatGui(currUserSession);
         communicator = new Communicator(chatGui, this);
 
         SendButtonListener sendAC = new SendButtonListener();
@@ -78,7 +78,6 @@ public class ChatApp {
 
         chatGui.dispose();
 
-        chatGui = new ChatGui();
         currUserSession = new UserSession(this);
         this.startLogin();
         JOptionPane.showMessageDialog(loginGui, "Sorry, you've been logged out :(", "Re-login, please", JOptionPane.WARNING_MESSAGE);
@@ -117,6 +116,7 @@ public class ChatApp {
             String username = loginGui.getUsername();
             String password = loginGui.getPassword();
 
+            // Assign token and username to currUserSession if login is valid
             int loginValidity = currUserSession.validateLogin(username, password, UUID.randomUUID());
 
             if (loginValidity == 1 || loginValidity == 2) {
@@ -127,7 +127,7 @@ public class ChatApp {
                 JOptionPane.showMessageDialog(chatGui, "Login Successful!");
             } else if (loginValidity == 0) {
                 // invalid login
-                JOptionPane.showMessageDialog(chatGui, "Invalid username or password :(");
+                JOptionPane.showMessageDialog(loginGui, "Invalid username or password :(");
             } else if (loginValidity == 3) {
                 // there already is an active session with a different token, asks the user if he wants to invalidate
                 // the active session

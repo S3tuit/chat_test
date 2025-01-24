@@ -1,8 +1,10 @@
 package org.chat.gui;
 
 import org.chat.communication.ChatMessage;
+import org.chat.db_obj.UserSession;
 
 import javax.swing.*;
+import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -22,6 +24,12 @@ public class ChatGui extends BaseFrame{
     private JPanel onlineUserPanel;
     private JLabel onlineUserCountLabel;
     private JPanel onlineUsernamesPanel;
+
+    private UserSession currUserSession;
+
+    public ChatGui(UserSession currUserSession) {
+        this.currUserSession = currUserSession;
+    }
 
     public void buildChatGui(ActionListener sendAC, ActionListener loadAC) {
         // Config the frame
@@ -103,7 +111,12 @@ public class ChatGui extends BaseFrame{
     public void updateOnlineUsername(List<String> onlineUsernames) {
         onlineUsernamesPanel.removeAll();
         for (String username : onlineUsernames) {
-            onlineUsernamesPanel.add(new JLabel(username));
+            Color usernameColor = username.equals(currUserSession.getUsername())
+                    ? Color.GREEN
+                    : Color.BLACK;
+            JLabel usernameLabel = new JLabel(username);
+            usernameLabel.setForeground(usernameColor);
+            onlineUsernamesPanel.add(usernameLabel);
         }
 
         onlineUsernamesPanel.revalidate();
@@ -120,7 +133,22 @@ public class ChatGui extends BaseFrame{
     public void appendMessage(ChatMessage chatMessage, ActionListener saveFileAC) {
         // Create a panel for the message
         JPanel messagePanel = new JPanel(new BorderLayout(5, 5));
-        messagePanel.setBorder(BorderFactory.createTitledBorder(chatMessage.getSenderName()));
+
+        // Show the message in green if send by the same user of the app
+        Color titleColor = chatMessage.getSenderName().equals(currUserSession.getUsername())
+                ? Color.GREEN
+                : Color.BLACK;
+
+        messagePanel.setBorder(
+                BorderFactory.createTitledBorder(
+                        BorderFactory.createLineBorder(Color.GRAY), // Border around the panel
+                        chatMessage.getSenderName(),                // Title text
+                        TitledBorder.LEFT,                          // Title alignment
+                        TitledBorder.TOP,                           // Title position
+                        null,                                       // Font (null for default)
+                        titleColor                                  // Title color
+                )
+        );
 
         // Add text message
         JTextArea messageText = new JTextArea(chatMessage.getMessage());
